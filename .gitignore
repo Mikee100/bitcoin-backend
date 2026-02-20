@@ -1,0 +1,14 @@
+# Local env with secrets - never commit
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+.venv/
+venv/
+*.pyc
+*.pyo
+
+# SQLite (optional; omit if you want to track a dev DB)
+*.db
