@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import os
 from datetime import datetime
 
 from sqlalchemy import DateTime, Float, Integer, String, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 
-DATABASE_URL = "sqlite:///./signals.db"
+# On Render you can set DATABASE_URL (e.g. PostgreSQL); otherwise SQLite is used (ephemeral on free tier).
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./signals.db")
+# Render PostgreSQL URLs use "postgres://"; SQLAlchemy 1.4+ expects "postgresql://".
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 
 class Base(DeclarativeBase):
@@ -66,7 +71,7 @@ class VirtualTrade(Base):
 
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False},
+    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

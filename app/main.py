@@ -38,12 +38,14 @@ app = FastAPI(
 )
 
 # Allow the Next.js frontend to call this API from the browser.
+# In production (e.g. Render), set CORS_ORIGINS to your frontend URL(s), comma-separated.
+_settings = get_settings()
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:5000",
     "http://127.0.0.1:5000",
-]
+] + _settings.get_cors_origins_list()
 
 app.add_middleware(
     CORSMiddleware,
@@ -79,24 +81,26 @@ def on_startup() -> None:
     # Ensure database tables exist
     init_db()
     
-    # Run migration for position_size_pct column if needed
-    try:
-        import sqlite3
-        import os
-        db_path = "./signals.db"
-        if os.path.exists(db_path):
-            conn = sqlite3.connect(db_path)
-            cursor = conn.cursor()
-            cursor.execute("PRAGMA table_info(virtual_account)")
-            columns = [col[1] for col in cursor.fetchall()]
-            if "position_size_pct" not in columns:
-                cursor.execute("ALTER TABLE virtual_account ADD COLUMN position_size_pct REAL DEFAULT 100.0")
+    # Run SQLite-only migration for position_size_pct column if needed (skip for PostgreSQL)
+    from app.database import DATABASE_URL
+    if "sqlite" in DATABASE_URL:
+        try:
+            import sqlite3
+            import os
+            db_path = "./signals.db"
+            if os.path.exists(db_path):
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+                cursor.execute("PRAGMA table_info(virtual_account)")
+                columns = [col[1] for col in cursor.fetchall()]
+                if "position_size_pct" not in columns:
+                    cursor.execute("ALTER TABLE virtual_account ADD COLUMN position_size_pct REAL DEFAULT 100.0")
+                    conn.commit()
+                cursor.execute("UPDATE virtual_account SET position_size_pct = 100.0 WHERE position_size_pct IS NULL")
                 conn.commit()
-            cursor.execute("UPDATE virtual_account SET position_size_pct = 100.0 WHERE position_size_pct IS NULL")
-            conn.commit()
-            conn.close()
-    except Exception as e:
-        print(f"Migration warning: {e}")
+                conn.close()
+        except Exception as e:
+            print(f"Migration warning: {e}")
 
 
 @app.get("/api/signal/latest", response_model=TradeSignal)
