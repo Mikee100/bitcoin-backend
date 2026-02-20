@@ -14,7 +14,8 @@
    - **Start:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 
 5. **Set environment variables** in the service’s **Environment** tab:
-   - **CORS_ORIGINS** – Your frontend URL(s), comma-separated (e.g. `https://your-app.vercel.app`). Required so the browser can call the API.
+   - **CORS_ORIGINS** – Your frontend origin(s), comma-separated, **no trailing slash**. Example: `https://bitcoin-frontend-livid.vercel.app`  
+     Required so the browser can call the API. If missing or wrong, you’ll see “blocked by CORS policy” in the browser console.
 
 6. After deploy, your API will be at `https://<service-name>.onrender.com`. Test:  
    `https://<service-name>.onrender.com/health`

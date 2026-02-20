@@ -56,6 +56,17 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc: Exception):
+    """Ensure all error responses are JSON and go through normal response path (CORS applied)."""
+    import traceback
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "error": str(exc)},
+    )
+
+
 @app.get("/health")
 async def health_check():
     """
@@ -116,16 +127,22 @@ async def get_latest_signal(
     settings = get_settings()
     use_symbol = symbol or settings.default_symbol
 
-    candles = await fetch_klines(use_symbol, timeframe=timeframe, limit=250)
+    try:
+        candles = await fetch_klines(use_symbol, timeframe=timeframe, limit=250)
+    except httpx.HTTPError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Market data temporarily unavailable: {str(e)}",
+        )
+
     htf_trend = None
     if timeframe == Timeframe.m15:
         try:
             htf_candles = await fetch_klines(use_symbol, timeframe=Timeframe.h1, limit=250)
             htf_trend = get_htf_trend(htf_candles)
         except httpx.HTTPError:
-            # If higher timeframe fetch fails, continue without HTF trend
-            # This allows the endpoint to still return a signal based on the main timeframe
             pass
+
     signal = generate_simple_trend_signal(
         use_symbol, timeframe=timeframe, candles=candles, htf_trend=htf_trend
     )
@@ -143,6 +160,9 @@ async def get_latest_signal(
         )
         db.add(db_signal)
         db.commit()
+    except Exception as e:
+        print(f"Signal persist error: {e}")
+        # Don't fail the request if DB write fails (e.g. Neon cold)
     finally:
         db.close()
 
@@ -157,7 +177,6 @@ async def get_latest_signal(
             signal.generated_at,
         )
     except Exception as e:
-        # Log error but don't fail the signal endpoint
         print(f"Virtual trading error: {e}")
     finally:
         db_virtual.close()
