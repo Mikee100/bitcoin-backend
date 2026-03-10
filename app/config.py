@@ -13,8 +13,8 @@ def _parse_cors_origins(v: str) -> List[str]:
 
 
 class Settings(BaseSettings):
-    app_name: str = "BTC Trading Signals API"
-    default_symbol: str = "BTCUSDT"
+    app_name: str = "Gold Trading Signals API"
+    default_symbol: str = "PAXGUSDT"
     default_timeframe: str = "15m"
 
     # CORS: comma-separated origins for production (e.g. your frontend URL on Vercel).

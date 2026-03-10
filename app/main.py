@@ -32,8 +32,8 @@ from app.services.virtual_trading import VirtualTradingService
 _last_notified: dict[tuple[str, str], SignalType | None] = {}
 
 app = FastAPI(
-    title="BTC Trading Signals API",
-    description="Backend service for Bitcoin trade signal generation.",
+    title="Gold Trading Signals API",
+    description="Backend service for Gold trade signal generation.",
     version="0.1.0",
 )
 
@@ -117,7 +117,7 @@ def on_startup() -> None:
 @app.get("/api/signal/latest", response_model=TradeSignal)
 async def get_latest_signal(
     background_tasks: BackgroundTasks,
-    symbol: str = Query(None, description="Trading pair symbol, e.g. BTCUSDT"),
+    symbol: str = Query(None, description="Trading pair symbol, e.g. PAXGUSDT"),
     timeframe: Timeframe = Query(Timeframe.m15, description="Candle interval"),
 ):
     """
@@ -195,7 +195,7 @@ async def get_latest_signal(
 
 @app.get("/api/candles", response_model=CandlesResponse)
 async def get_candles(
-    symbol: str = Query("BTCUSDT", description="Trading pair symbol"),
+    symbol: str = Query("PAXGUSDT", description="Trading pair symbol"),
     timeframe: Timeframe = Query(Timeframe.m15, description="Candle interval"),
     limit: int = Query(100, ge=30, le=300, description="Number of candles"),
 ):
@@ -224,7 +224,7 @@ async def get_candles(
 
 @app.get("/api/signals/history", response_model=SignalHistoryResponse)
 def get_signal_history(
-    symbol: str | None = Query(None, description="Filter by symbol, e.g. BTCUSDT"),
+    symbol: str | None = Query(None, description="Filter by symbol, e.g. PAXGUSDT"),
     timeframe: Timeframe | None = Query(None, description="Filter by timeframe"),
     limit: int = Query(50, ge=1, le=500, description="Max number of records to return"),
 ):
@@ -261,7 +261,7 @@ def get_signal_history(
 
 @app.get("/api/backtest", response_model=BacktestResult)
 async def backtest_strategy(
-    symbol: str = Query("BTCUSDT", description="Trading pair symbol"),
+    symbol: str = Query("PAXGUSDT", description="Trading pair symbol"),
     timeframe: Timeframe = Query(Timeframe.m15, description="Candle interval"),
     limit: int = Query(1500, ge=300, le=5000, description="Number of candles to use"),
     fee_bps: int = Query(

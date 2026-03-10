@@ -32,7 +32,7 @@ def send_trade_alert(signal: TradeSignal) -> None:
         logger.warning("Email skipped: NOTIFY_EMAIL and SMTP_USER are both empty")
         return
 
-    subject = f"[BTC Signal] {signal.signal.value} @ {signal.price:,.2f}"
+    subject = f"[GOLD Signal] {signal.signal.value} @ {signal.price:,.2f}"
     body_plain = (
         f"Trade opportunity detected.\n\n"
         f"Symbol: {signal.symbol}\n"
@@ -77,8 +77,8 @@ def send_test_email() -> tuple[bool, str]:
     if not settings.smtp_user or not settings.smtp_password:
         return False, "SMTP_USER or SMTP_PASSWORD is missing in .env"
     to_email = settings.notify_email or settings.smtp_user
-    subject = "[BTC Signal] Test email"
-    body = "If you see this, email from your BTC Signal app is working."
+    subject = "[GOLD Signal] Test email"
+    body = "If you see this, email from your GOLD Signal app is working."
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"] = settings.smtp_user
