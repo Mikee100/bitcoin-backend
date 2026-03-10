@@ -18,20 +18,28 @@ async def fetch_klines(
     limit: int = 200,
 ) -> List[Candle]:
     """
-    Fetch recent OHLCV candles for a symbol and timeframe from Binance.
+    Fetch recent OHLCV candles for a symbol and timeframe from Binance public API.
 
-    This uses the public klines endpoint (no auth required).
-    
+    Docs: https://binance-docs.github.io/apidocs/spot/en/#kline-candlestick-data
     Raises:
         httpx.HTTPError: If the request fails or times out
     """
     settings = get_settings()
-    symbol = symbol or settings.default_symbol
+    use_symbol = (symbol or settings.default_symbol).upper()
+
+    interval_map = {
+        "15m": "15m",
+        "1h": "1h",
+    }
+    interval = interval_map.get(timeframe.value, "15m")
 
     url = f"{BINANCE_BASE_URL}/api/v3/klines"
-    params = {"symbol": symbol.upper(), "interval": timeframe.value, "limit": limit}
+    params = {
+        "symbol": use_symbol,
+        "interval": interval,
+        "limit": limit,
+    }
 
-    # Increased timeout to 30 seconds and added connection timeout
     timeout = httpx.Timeout(30.0, connect=10.0)
     async with httpx.AsyncClient(timeout=timeout) as client:
         try:
@@ -56,9 +64,9 @@ async def fetch_klines(
             ) from e
 
     candles: List[Candle] = []
+    # Binance kline format: [open_time, open, high, low, close, volume, close_time, ...]
     for item in raw:
-        # See Binance docs for kline array format
-        open_time_ms = item[0]
+        open_time_ms = int(item[0])
         open_price = float(item[1])
         high_price = float(item[2])
         low_price = float(item[3])
@@ -67,7 +75,7 @@ async def fetch_klines(
 
         candles.append(
             Candle(
-                open_time=datetime.utcfromtimestamp(open_time_ms / 1000.0),
+                open_time=datetime.utcfromtimestamp(open_time_ms / 1000),
                 open=open_price,
                 high=high_price,
                 low=low_price,
