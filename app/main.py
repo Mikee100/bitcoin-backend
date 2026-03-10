@@ -130,9 +130,16 @@ async def get_latest_signal(
     try:
         candles = await fetch_klines(use_symbol, timeframe=timeframe, limit=250)
     except httpx.HTTPError as e:
+        print(f"[get_latest_signal] fetch_klines error: {e}")
         raise HTTPException(
             status_code=503,
             detail=f"Market data temporarily unavailable: {str(e)}",
+        )
+    except Exception as e:
+        print(f"[get_latest_signal] Unexpected error: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail=f"Unexpected error: {str(e)}",
         )
 
     htf_trend = None
@@ -140,8 +147,10 @@ async def get_latest_signal(
         try:
             htf_candles = await fetch_klines(use_symbol, timeframe=Timeframe.h1, limit=250)
             htf_trend = get_htf_trend(htf_candles)
-        except httpx.HTTPError:
-            pass
+        except httpx.HTTPError as e:
+            print(f"[get_latest_signal] HTF fetch_klines error: {e}")
+        except Exception as e:
+            print(f"[get_latest_signal] HTF Unexpected error: {e}")
 
     signal = generate_simple_trend_signal(
         use_symbol, timeframe=timeframe, candles=candles, htf_trend=htf_trend
@@ -204,9 +213,16 @@ async def get_candles(
     try:
         raw = await fetch_klines(use_symbol, timeframe=timeframe, limit=limit)
     except httpx.HTTPError as e:
+        print(f"[get_candles] fetch_klines error: {e}")
         raise HTTPException(
             status_code=503,
             detail=f"Unable to fetch market data from Binance: {str(e)}"
+        )
+    except Exception as e:
+        print(f"[get_candles] Unexpected error: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail=f"Unexpected error: {str(e)}"
         )
     candles = [
         ChartCandle(
@@ -279,9 +295,16 @@ async def backtest_strategy(
     try:
         candles = await fetch_klines(use_symbol, timeframe=timeframe, limit=limit)
     except httpx.HTTPError as e:
+        print(f"[backtest_strategy] fetch_klines error: {e}")
         raise HTTPException(
             status_code=503,
             detail=f"Unable to fetch market data from Binance: {str(e)}"
+        )
+    except Exception as e:
+        print(f"[backtest_strategy] Unexpected error: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail=f"Unexpected error: {str(e)}"
         )
 
     trades: list[BacktestTrade] = []

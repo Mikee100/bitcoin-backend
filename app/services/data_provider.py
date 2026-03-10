@@ -39,9 +39,20 @@ async def fetch_klines(
             resp.raise_for_status()
             raw = resp.json()
         except (httpx.ConnectTimeout, httpx.ReadTimeout, httpx.ConnectError) as e:
+            print(f"[fetch_klines] Connection error: {e}")
             raise httpx.HTTPError(
                 f"Failed to fetch klines from Binance: {type(e).__name__}. "
                 f"Please check your internet connection and try again."
+            ) from e
+        except httpx.HTTPStatusError as e:
+            print(f"[fetch_klines] HTTP status error: {e.response.status_code} {e.response.text}")
+            raise httpx.HTTPError(
+                f"Binance API returned status {e.response.status_code}: {e.response.text}"
+            ) from e
+        except Exception as e:
+            print(f"[fetch_klines] Unexpected error: {e}")
+            raise httpx.HTTPError(
+                f"Unexpected error fetching klines: {str(e)}"
             ) from e
 
     candles: List[Candle] = []
