@@ -75,6 +75,55 @@ async def health_check():
     return {"status": "ok"}
 
 
+@app.get("/api/debug/market")
+async def debug_market_connectivity(
+    symbol: str = Query("PAXGUSDT", description="Trading pair symbol"),
+    timeframe: Timeframe = Query(Timeframe.m15, description="Candle interval"),
+    limit: int = Query(50, ge=10, le=200, description="Number of candles to request"),
+):
+    """
+    Debug endpoint: directly test connectivity to the upstream market data provider
+    (Binance) from this backend instance and return either a small sample of candles
+    or the exact error message.
+    """
+    use_symbol = symbol.upper()
+    try:
+        candles = await fetch_klines(use_symbol, timeframe=timeframe, limit=limit)
+        # Return only a small sample to keep the payload light
+        sample = candles[:5]
+        return {
+            "ok": True,
+            "symbol": use_symbol,
+            "timeframe": timeframe.value,
+            "count": len(candles),
+            "sample": [
+                {
+                    "open_time": c.open_time.isoformat(),
+                    "open": c.open,
+                    "high": c.high,
+                    "low": c.low,
+                    "close": c.close,
+                    "volume": c.volume,
+                }
+                for c in sample
+            ],
+        }
+    except httpx.HTTPError as e:
+        print(f"[debug_market_connectivity] fetch_klines HTTPError: {e}")
+        return {
+            "ok": False,
+            "error_type": "httpx.HTTPError",
+            "detail": str(e),
+        }
+    except Exception as e:
+        print(f"[debug_market_connectivity] Unexpected error: {e}")
+        return {
+            "ok": False,
+            "error_type": type(e).__name__,
+            "detail": str(e),
+        }
+
+
 @app.get("/api/notify/test")
 def test_email():
     """
